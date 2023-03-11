@@ -106,7 +106,7 @@ error KyberKEM::WriteToFile(const byte* data, const size_t length , const std::s
     std::ofstream file(filename);
 
     if (file.is_open()) {
-        for (int i = 0; i < length; i++)
+        for (size_t i = 0; i < length; i++)
             file << std::hex << std::setw(2) << std::setfill('0') << (int)(data[i]);
         file.close();
         return "";
@@ -148,7 +148,7 @@ error KyberKEM::ReadFromFile(const std::string filename, byte* out, const size_t
 
         if (hexString.length() != 2 * length) return "Error: invalid hex string length";
         std::string byteString = "";
-        for (int i = 0; i < length; i++) {
+        for (size_t i = 0; i < length; i++) {
             byteString = hexString.substr(i * 2, 2);
             out[i] = (byte)strtol(byteString.c_str(), NULL, 16);
         }
