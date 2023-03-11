@@ -1,4 +1,4 @@
-CC=/usr/bin/g++
+CC=$(shell which g++)
 CFLAGS += -O3 -march=native -fomit-frame-pointer
 LDFLAGS=-lcrypto
 
