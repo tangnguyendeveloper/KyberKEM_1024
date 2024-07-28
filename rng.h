@@ -9,6 +9,7 @@
 #define rng_h
 
 #include <stdio.h>
+#include "fips202.h"
 
 #define RNG_SUCCESS      0
 #define RNG_BAD_MAXLEN  -1
@@ -47,7 +48,7 @@ seedexpander(AES_XOF_struct *ctx, unsigned char *x, unsigned long xlen);
 void
 randombytes_init(unsigned char *entropy_input,
                  unsigned char *personalization_string,
-                 int security_strength);
+                 size_t personalization_string_length);
 
 int
 randombytes(unsigned char *x, unsigned long long xlen);

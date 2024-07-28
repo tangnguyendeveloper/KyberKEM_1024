@@ -83,24 +83,23 @@ int main()
 
 
 
-int main(){
-
+void Test1(){
     KyberKEM user1, user2;
 
     // Random key
     auto start_time = std::chrono::high_resolution_clock::now();
     
-    std::pair<byte*, error> result = user1.RandomKey();
+    std::pair<byte*, error> result = user1.RandomKey(NULL, NULL, 0);
     if (!result.first) {
         std::cerr << result.second << std::endl;
-        return 0;
+        return;
     }
     byte* public_key_u1 = result.first;
 
-    result = user2.RandomKey();
+    result = user2.RandomKey(NULL, NULL, 0);
     if (!result.first) {
         std::cerr << result.second << std::endl;
-        return 0;
+        return;
     }
     byte* public_key_u2 = result.first;
 
@@ -123,14 +122,14 @@ int main(){
     result = user1.LoadPublicKey("user1");
     if (!result.first) {
         std::cerr << result.second << std::endl;
-        return 0;
+        return;
     }
     byte* public_key_u1_1 = result.first;
 
     result = user2.LoadPublicKey("user2");
     if (!result.first) {
         std::cerr << result.second << std::endl;
-        return 0;
+        return;
     }
     byte* public_key_u2_1 = result.first;
 
@@ -148,14 +147,14 @@ int main(){
     result = user1.KeyEncapsulation(public_key_u2);
     if (!result.first) {
         std::cerr << result.second << std::endl;
-        return 0;
+        return;
     }
     byte* ciphertext_u1 = result.first;
 
     result = user2.KeyEncapsulation(public_key_u1);
     if (!result.first) {
         std::cerr << result.second << std::endl;
-        return 0;
+        return;
     }
     byte* ciphertext_u2 = result.first;
 
@@ -172,14 +171,14 @@ int main(){
     result = user1.KeyDecapsulation(ciphertext_u2);
     if (!result.first) {
         std::cerr << result.second << std::endl;
-        return 0;
+        return;
     }
     byte* shared_secret_u2 = result.first;
 
     result = user2.KeyDecapsulation(ciphertext_u1);
     if (!result.first) {
         std::cerr << result.second << std::endl;
-        return 0;
+        return;
     }
     byte* shared_secret_u1 = result.first;
 
@@ -209,6 +208,99 @@ int main(){
     delete[] ciphertext_u1, ciphertext_u2;
     delete[] shared_secret_u1, shared_secret_u2;
     delete[] s1, s2;
+}
+
+void Test2() {
+    KyberKEM user1, user2;
+
+    byte authentication_vector[48]; // user1 generate (AUSF) and send to user2
+    for (int i = 0; i < 48; i++) authentication_vector[i] = i+1;
+    byte personalization_string[48]; // user2 generate (ME) and send to user1
+    for (uint8_t i = 0; i < 48; i++) personalization_string[i] = 2*i+1;
+
+    std::pair<byte*, error> result = user1.RandomKey(authentication_vector, personalization_string, sizeof(personalization_string));
+    if (!result.first) {
+        std::cerr << result.second << std::endl;
+        return;
+    }
+    byte* public_key_u1 = result.first;
+
+    result = user2.RandomKey(authentication_vector, personalization_string, sizeof(personalization_string));
+    if (!result.first) {
+        std::cerr << result.second << std::endl;
+        return;
+    }
+    byte* public_key_u2 = result.first;
+
+    if (!verify(public_key_u1, public_key_u2, CRYPTO_PUBLICKEYBYTES)) std::cout << "PublicKey are same!\n";
+    if (user1 == user2) std::cout << "PrivateKey are same!\n";
+
+    result = user1.KeyEncapsulation(public_key_u2);
+    if (!result.first) {
+        std::cerr << result.second << std::endl;
+        return;
+    }
+    byte* ciphertext_u1 = result.first;
+
+    result = user2.KeyEncapsulation(public_key_u1);
+    if (!result.first) {
+        std::cerr << result.second << std::endl;
+        return;
+    }
+    byte* ciphertext_u2 = result.first;
+    
+
+    result = user1.KeyDecapsulation(ciphertext_u2);
+    if (!result.first) {
+        std::cerr << result.second << std::endl;
+        return;
+    }
+    byte* shared_secret_u2 = result.first;
+
+    result = user2.KeyDecapsulation(ciphertext_u1);
+    if (!result.first) {
+        std::cerr << result.second << std::endl;
+        return;
+    }
+    byte* shared_secret_u1 = result.first;
+
+    byte* s1 = user1.ShareSecret();
+    byte* s2 = user2.ShareSecret();
+
+    if (
+        !verify(s1, shared_secret_u1, CRYPTO_BYTES)
+        && !verify(s2, shared_secret_u2, CRYPTO_BYTES)
+    ) std::cout << "Encapsulation and Decapsulation Key OK!\n";
+    else std::cerr << "Encapsulation and Decapsulation Key ERROR!\n";
+
+    std::cout << "\nshared_secret between user1 and user2: ";
+    for (int i = 0; i < CRYPTO_BYTES; i++) std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)(shared_secret_u2[i] ^ shared_secret_u1[i]);
+    std::cout << std::endl;
+
+    std::cout << "\nshared_secret user1: ";
+    for (int i = 0; i < CRYPTO_BYTES; i++) std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)shared_secret_u1[i];
+    std::cout << std::endl;
+
+    std::cout << "\nshared_secret user2: ";
+    for (int i = 0; i < CRYPTO_BYTES; i++) std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)shared_secret_u2[i];
+    std::cout << std::endl;
+
+
+    delete[] public_key_u1, public_key_u2;
+    delete[] ciphertext_u1, ciphertext_u2;
+    delete[] shared_secret_u1, shared_secret_u2;
+    delete[] s1, s2;
+}
+
+int main(){
+
+    std::cout << "test 1" << std::endl;
+    Test1();
+
+    std::cout << "---------------------------------------------\n";
+
+    std::cout << "test 2" << std::endl;
+    Test2();
 
     return 0;
 }

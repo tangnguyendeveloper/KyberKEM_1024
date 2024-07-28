@@ -39,19 +39,22 @@ byte* KyberKEM::GetEntropy() {
 }
 
 
-std::pair<byte*, error> KyberKEM::RandomKey() {
+std::pair<byte*, error> KyberKEM::RandomKey(byte *entropy_input, byte *personalization_string, size_t personalization_string_length) {
 
     byte seed[48];
-    byte* entropy_input = this->GetEntropy();
+    bool gennerate_entropy = !entropy_input;
+    if (gennerate_entropy) entropy_input = this->GetEntropy();
+
     byte* public_key = new byte[CRYPTO_PUBLICKEYBYTES];
     std::ostringstream error;
     int ret_val = 0;
 
-    randombytes_init(entropy_input, NULL, 256);
+    randombytes_init(entropy_input, personalization_string, personalization_string_length);
     randombytes(seed, 48);
-    delete[] entropy_input;
 
-    randombytes_init(seed, NULL, 256);
+    if (gennerate_entropy) delete[] entropy_input;
+
+    randombytes_init(seed, NULL, 0);
 
     if ((ret_val = crypto_kem_keypair(public_key, this->secret_key)) != 0) {
         error << "ERROR: crypto_kem_keypair returned <" << ret_val << ">";
@@ -188,4 +191,8 @@ std::pair<byte*, error> KyberKEM::LoadPublicKey(const std::string filename) {
         public_key,
         err
     );
+}
+
+bool KyberKEM::operator==(const KyberKEM& other) const{
+    return !verify(this->secret_key, other.secret_key, CRYPTO_SECRETKEYBYTES);
 }

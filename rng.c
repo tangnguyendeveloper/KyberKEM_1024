@@ -138,14 +138,18 @@ AES256_ECB(unsigned char *key, unsigned char *ctr, unsigned char *buffer)
 void
 randombytes_init(unsigned char *entropy_input,
                  unsigned char *personalization_string,
-                 int security_strength)
+                 size_t personalization_string_length)
 {
     unsigned char   seed_material[48];
+    unsigned char personalization[48];
 
-    memcpy(seed_material, entropy_input, 48);
-    if (personalization_string)
+    if (entropy_input) memcpy(seed_material, entropy_input, 48);
+
+    if (personalization_string) {
+        shake256(personalization, 48, personalization_string, personalization_string_length);
         for (int i=0; i<48; i++)
-            seed_material[i] ^= personalization_string[i];
+            seed_material[i] ^= personalization[i];
+    }
     memset(DRBG_ctx.Key, 0x00, 32);
     memset(DRBG_ctx.V, 0x00, 16);
     AES256_CTR_DRBG_Update(seed_material, DRBG_ctx.Key, DRBG_ctx.V);

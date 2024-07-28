@@ -1,5 +1,5 @@
 CC=$(shell which g++)
-CFLAGS += -O3 -march=native -fomit-frame-pointer
+CFLAGS += -std=c++23 -O3 -march=native -fomit-frame-pointer
 CFLAGS_SHARE += -Wall -fPIC -O3 -march=native -fomit-frame-pointer
 LDFLAGS=-lcrypto
 

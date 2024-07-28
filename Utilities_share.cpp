@@ -31,7 +31,7 @@ extern "C" {
     void DeleteArray(byte* array) {delete[] array;}
 
     std::pair<byte*, error> RandomKey(KyberKEM* kyber_kem) {
-        return kyber_kem->RandomKey();
+        return kyber_kem->RandomKey(NULL, NULL, 0);
     }
 
     std::pair<byte*, error> KeyEncapsulation(KyberKEM* kyber_kem, const byte* public_key) {
