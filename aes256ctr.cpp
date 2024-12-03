@@ -1,6 +1,7 @@
 #include "aes256ctr.hpp"
 #include <stdexcept>
 
+
 AES256CTR::AES256CTR(byte* key, byte* iv) {
         this->ctx = nullptr;
         this->key_ = key;

@@ -81,6 +81,7 @@ int main()
 #include <chrono>
 #include "verify.h"
 #include "aes256ctr.hpp"
+#include "chacha20.hpp"
 
 
 
@@ -208,15 +209,13 @@ void Test1(){
 
         //AES 256 CTR
 
-    const byte* message = (const byte*)"hello hahaha!";
+    const byte* message = (const byte*)"Kyber is a key encapsulation mechanism (KEM) designed to be resistant to cryptanalytic attacks with future powerful quantum computers. It is used to establish a shared secret between two communicating parties without an (IND-CCA2) attacker in the transmission system being able to decrypt it. This asymmetric cryptosystem uses a variant of the learning with errors lattice problem as its basic trapdoor function. It won the NIST competition for the first post-quantum cryptography (PQ) standard.[1] NIST calls its standard Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM).";
     const size_t message_len = strlen((const char*)message);
-    byte* personalization_string = (byte*)"random bla bla...hyllll";
 
     byte* iv = new byte[16];
     byte* key = new byte[CRYPTO_BYTES];
 
-    randombytes_init(shared_secret_u1, personalization_string, strlen((const char*)personalization_string));
-    randombytes(iv, 16);
+    memcpy(iv, shared_secret_u1, 16);
     memcpy(key, shared_secret_u2, CRYPTO_BYTES);
     
     AES256CTR ed(key, iv);
@@ -329,6 +328,56 @@ void Test2() {
     std::cout << std::endl;
 
 
+    //ChaCha20
+
+    const byte* message = (const byte*)"Kyber is a key encapsulation mechanism (KEM) designed to be resistant to cryptanalytic attacks with future powerful quantum computers. It is used to establish a shared secret between two communicating parties without an (IND-CCA2) attacker in the transmission system being able to decrypt it. This asymmetric cryptosystem uses a variant of the learning with errors lattice problem as its basic trapdoor function. It won the NIST competition for the first post-quantum cryptography (PQ) standard.[1] NIST calls its standard Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM).";
+    const size_t message_len = strlen((const char*)message);
+    
+    // Generate nonce (12 bytes for XChaCha20)
+    byte* nonce = new byte[12];
+    byte* key = new byte[CRYPTO_BYTES]; // XChaCha20 uses 32-byte key
+    
+    memcpy(key, shared_secret_u2, CRYPTO_BYTES);
+    memcpy(nonce, shared_secret_u1, 12);
+    
+    ChaCha20 chacha(key, nonce);
+
+    // Encrypt
+    std::pair<std::pair<const byte*, size_t>, const char*> result_enc = chacha.encrypt(message, message_len);
+    if (result_enc.second != nullptr) {
+        std::cerr << result_enc.second << std::endl;
+        return;
+    }
+    const byte* ci = result_enc.first.first;
+    size_t ci_len = result_enc.first.second;
+
+    // Decrypt
+    std::pair<std::pair<const byte*, size_t>, const char*> result_dec = chacha.decrypt(ci, ci_len);
+    if (result_dec.second != nullptr) {
+        std::cerr << result_dec.second << std::endl;
+        return;
+    }
+    const byte* pl = result_dec.first.first;
+    size_t pl_len = result_dec.first.second;
+
+    // Print results
+    std::cout << "\nChaCha20 Test Results:" << std::endl;
+    std::cout << "Ciphertext: ";
+    for (size_t i = 0; i < ci_len; i++) {
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)ci[i];
+    }
+    std::cout << "\nDecrypted text: ";
+    for (size_t i = 0; i < pl_len; i++) {
+        std::cout << (char)pl[i];
+    }
+    std::cout << std::endl;
+
+    if (memcmp(message, pl, message_len) == 0) {
+        std::cout << "ChaCha20: OK!" << std::endl;
+    } else {
+        std::cout << "ChaCha20: Failed!" << std::endl;
+    }
+
     delete[] public_key_u1, public_key_u2;
     delete[] ciphertext_u1, ciphertext_u2;
     delete[] shared_secret_u1, shared_secret_u2;
@@ -337,12 +386,12 @@ void Test2() {
 
 int main(){
 
-    std::cout << "test 1" << std::endl;
+    std::cout << "test 1 Kyber + AES256CTR" << std::endl;
     Test1();
 
     std::cout << "---------------------------------------------\n";
 
-    std::cout << "test 2" << std::endl;
+    std::cout << "test 2 Kyber + ChaCha20" << std::endl;
     Test2();
 
     return 0;
