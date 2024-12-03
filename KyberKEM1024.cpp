@@ -42,8 +42,8 @@ byte* KyberKEM::GetEntropy() {
 std::pair<byte*, error> KyberKEM::RandomKey(byte *entropy_input, byte *personalization_string, size_t personalization_string_length) {
 
     byte seed[48];
-    bool gennerate_entropy = !entropy_input;
-    if (gennerate_entropy) entropy_input = this->GetEntropy();
+    bool generate_entropy = !entropy_input;
+    if (generate_entropy) entropy_input = this->GetEntropy();
 
     byte* public_key = new byte[CRYPTO_PUBLICKEYBYTES];
     std::ostringstream error;
@@ -52,7 +52,7 @@ std::pair<byte*, error> KyberKEM::RandomKey(byte *entropy_input, byte *personali
     randombytes_init(entropy_input, personalization_string, personalization_string_length);
     randombytes(seed, 48);
 
-    if (gennerate_entropy) delete[] entropy_input;
+    if (generate_entropy) delete[] entropy_input;
 
     randombytes_init(seed, NULL, 0);
 

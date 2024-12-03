@@ -80,6 +80,7 @@ int main()
 #include <iostream>
 #include <chrono>
 #include "verify.h"
+#include "aes256ctr.hpp"
 
 
 
@@ -203,6 +204,48 @@ void Test1(){
     std::cout << "\nshared_secret user2: ";
     for (int i = 0; i < CRYPTO_BYTES; i++) std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)shared_secret_u2[i];
     std::cout << std::endl;
+
+
+        //AES 256 CTR
+
+    const byte* message = (const byte*)"hello hahaha!";
+    const size_t message_len = strlen((const char*)message);
+    byte* personalization_string = (byte*)"random bla bla...hyllll";
+
+    byte* iv = new byte[16];
+    byte* key = new byte[CRYPTO_BYTES];
+
+    randombytes_init(shared_secret_u1, personalization_string, strlen((const char*)personalization_string));
+    randombytes(iv, 16);
+    memcpy(key, shared_secret_u2, CRYPTO_BYTES);
+    
+    AES256CTR ed(key, iv);
+
+    std::pair<std::pair<const byte *, size_t>, const char*> result_enc = ed.encrypt(message, message_len);
+    if (result_enc.second != nullptr) {
+        std::cerr << result_enc.second << std::endl;
+    }
+    const byte* ci = result_enc.first.first;
+    size_t ci_len = result_enc.first.second;
+
+    std::pair<std::pair<const byte *, size_t>, const char*> result_dec = ed.decrypt(ci, ci_len);
+    if (result_dec.second != nullptr) {
+        std::cerr << result_dec.second << std::endl;
+    }
+    const byte* pl = result_dec.first.first;
+    size_t pl_len = result_dec.first.second;
+
+    std::cout << "Ciphertext: ";
+    for (size_t i = 0; i < ci_len; i++) {
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)ci[i];
+    }
+    std::cout << "\nPlaintext: ";
+    for (size_t i = 0; i < pl_len; i++) {
+        std::cout << (char)pl[i];
+    }
+    std::cout << std::endl;
+
+    std::cout << "AES 256 CTR: OK!" << std::endl;
 
     delete[] public_key_u1, public_key_u2, public_key_u1_1, public_key_u2_1;
     delete[] ciphertext_u1, ciphertext_u2;
